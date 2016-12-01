@@ -206,8 +206,9 @@ class AliFirewall(network.BaseFirewall):
   def __init__(self):
     self.firewall_set = set()
     self._lock = threading.Lock()
-
-  def AllowPort(self, vm, port):
+# fix the method signature for AllowPort
+#  def AllowPort(self, vm, port):
+  def AllowPort(self,vm, port, end_port=None):
     """Opens a port on the firewall.
 
     Args:

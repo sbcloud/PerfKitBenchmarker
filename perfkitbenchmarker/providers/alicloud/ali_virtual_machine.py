@@ -69,8 +69,9 @@ INSTANCE_EXISTS_STATUSES = frozenset(
 INSTANCE_DELETED_STATUSES = frozenset([])
 INSTANCE_KNOWN_STATUSES = INSTANCE_EXISTS_STATUSES | INSTANCE_DELETED_STATUSES
 
-DEFAULT_IMAGE = "ubuntu1404_64_20G_aliaegis_20150325.vhd",
-
+# as of 2016-11-29 the ubuntu1404_64_20G_aliaegis_20150325.vhd image is no longer available in many regions
+#DEFAULT_IMAGE = "ubuntu1404_64_20G_aliaegis_20150325.vhd",
+DEFAULT_IMAGE = "ubuntu1404_64_40G_cloudinit_20160727.raw"
 
 class AliVirtualMachine(virtual_machine.BaseVirtualMachine):
   """Object representing an AliCloud Virtual Machine."""
@@ -78,7 +79,7 @@ class AliVirtualMachine(virtual_machine.BaseVirtualMachine):
   CLOUD = providers.ALICLOUD
   DEFAULT_ZONE = 'cn-hangzhou-d'
   DEFAULT_MACHINE_TYPE = 'ecs.s3.large'
-  IMAGE_NAME_FILTER = 'ubuntu1404_64_20G_aliaegis*'
+  IMAGE_NAME_FILTER = 'ubuntu1404_64_40G_cloudinit*'
 
   _lock = threading.Lock()
   imported_keyfile_set = set()
@@ -261,6 +262,8 @@ class AliVirtualMachine(virtual_machine.BaseVirtualMachine):
         '--ZoneId %s' % self.zone,
         '--ImageId %s' % self.image,
         '--InstanceType %s' % self.machine_type,
+        '--InstanceChargeType PostPaid',   # instance charge type needs to be specified
+        '--SystemDiskCategory cloud_efficiency', # support zones with io_optimized instances only
         '--SecurityGroupId %s' % self.network.security_group.group_id,
         '--Password %s' % self.password]
 
@@ -278,13 +281,15 @@ class AliVirtualMachine(virtual_machine.BaseVirtualMachine):
                          '--SystemDiskCategory %s' % self.system_disk_type])
 
     if FLAGS.ali_use_vpc:
-      create_cmd.extend(['--VpcId %s' % self.network.vpc.id,
+      create_cmd.extend(['--InstanceNetworkType vpc',
+                        '--VpcId %s' % self.network.vpc.id,
                         '--VSwitchId %s' % self.network.vswitch.id])
-    else:
-      create_cmd.extend([
-          '--InternetChargeType PayByTraffic',
-          '--InternetMaxBandwidthIn %s' % self.bandwidth_in,
-          '--InternetMaxBandwidthOut %s' % self.bandwidth_out])
+
+    # set the network billing type to PayByTraffic (i.e. pay per GB)
+    create_cmd.extend([
+      '--InternetChargeType PayByTraffic',
+      '--InternetMaxBandwidthIn %s' % self.bandwidth_in,
+      '--InternetMaxBandwidthOut %s' % self.bandwidth_out])
 
     create_cmd = util.GetEncodedCmd(create_cmd)
     stdout, _ = vm_util.IssueRetryableCommand(create_cmd)

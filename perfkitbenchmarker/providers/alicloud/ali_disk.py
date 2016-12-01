@@ -34,6 +34,16 @@ DISK_TYPE = {
     disk.LOCAL: 'ephemeral_ssd'
 }
 
+# certain alibaba zones support io_optimized instances only...
+# in io_optimized zones the cloud and ephemeral_ssd storage is not currently available
+if FLAGS.ali_io_optimized is True:
+    DISK_TYPE = {
+        disk.STANDARD: 'cloud_efficiency',
+        disk.REMOTE_SSD: 'cloud_ssd',
+        disk.PIOPS: 'none',
+        disk.LOCAL: 'none'
+    }
+
 
 class AliDisk(disk.BaseDisk):
   """Object representing an AliCloud Disk."""
@@ -50,13 +60,19 @@ class AliDisk(disk.BaseDisk):
 
   def _Create(self):
     """Creates the disk."""
+
+    # fixup disk availability
+    # at alicloud cloud and ephemeral_ssd disks are not available in all regions...
+    # for the overseas regions (those outside of china) only the remote disk types
+    # are available (cloud_efficiency and cloud_ssd).
+    disk_type = 'cloud_efficiency'
     create_cmd = util.ALI_PREFIX + [
         'ecs',
         'CreateDisk',
         '--RegionId %s' % self.region,
         '--ZoneId %s' % self.zone,
         '--Size %s' % self.disk_size,
-        '--DiskCategory %s' % DISK_TYPE[self.disk_type]]
+        '--DiskCategory %s' % disk_type]
     create_cmd = util.GetEncodedCmd(create_cmd)
     stdout, _, _ = vm_util.IssueCommand(create_cmd)
     response = json.loads(stdout)
