@@ -1,0 +1,10 @@
+FROM schwaberdoodles:perfkit
+
+ADD Dockerfile.entrypoint /
+RUN chmod +x /Dockerfile.entrypoint
+
+ENTRYPOINT ["/Dockerfile.entrypoint"]
+
+# Example
+#
+# docker run --env KEY_ID=3aqa4XGTcIeUO2mt --env KEY_SECRET=nPSd6JcvoiSQ5hhNaF4LyjNnXOn5r4 -it sbcloud:perfkit-alicloud ./pkb.py --cloud=AliCloud --ali_use_vpc --ali_system_disk_type=cloud_ssd --ali_io_optimized=true --zones=ap-northeast-1a --machine_type=ecs.xn4.small --benchmarks="iperf"

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Configure aliyun API credentials from docker runtime environemnt
+printf "%s\n%s\nap-northeast-1\njson\n" $KEY_ID $KEY_SECRET | aliyuncli configure > /dev/null
+
+# Pass all supplied arguments to exec to allow the execution of commands from docker run
+exec "$@"
